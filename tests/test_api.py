@@ -251,10 +251,25 @@ def test_api():
         # -------------------------------------------------------------
         # 6. Invalid Workflow Transitions (400)
         # -------------------------------------------------------------
-        res = client.patch("/api/issues/BUG-00001/status", json={"status": "Resolved"}, headers=auth_headers)
+        with app.app_context():
+            conn = get_db()
+            with conn.cursor() as cur:
+                cur.execute("SELECT issue_id FROM issues WHERE status = 'Open' LIMIT 1")
+                open_issue_id = cur.fetchone()["issue_id"]
+                cur.execute("SELECT issue_id FROM issues WHERE status = 'Closed' LIMIT 1")
+                closed_issue_id = cur.fetchone()["issue_id"]
+
+        # Attempt to skip lifecycle stages: Open -> Resolved (skipping In Progress and Testing)
+        res = client.patch(f"/api/issues/{open_issue_id}/status", json={"status": "Resolved"}, headers=auth_headers)
         assert res.status_code == 400
         assert res.get_json()["error"] == "Invalid workflow transition"
-        print("  [PASS] Skipping lifecycle stages rejected with 400.")
+        assert "Cannot move from 'Open' to 'Resolved'" in res.get_json()["message"]
+
+        # Attempt to transition out of terminal state: Closed -> Open
+        res_terminal = client.patch(f"/api/issues/{closed_issue_id}/status", json={"status": "Open"}, headers=auth_headers)
+        assert res_terminal.status_code == 400
+        assert res_terminal.get_json()["error"] == "Invalid workflow transition"
+        print("  [PASS] Skipping lifecycle stages and terminal state transitions rejected with 400.")
 
         # -------------------------------------------------------------
         # 7. Role-Based & Cross-Project Scope Authorization (403)
