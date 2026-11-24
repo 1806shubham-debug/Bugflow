@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Projects{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / Projects
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h1 class="h3 fw-bold text-dark mb-1">Projects</h1>
+      <p class="text-secondary small mb-0">Overview of all active and archived development initiatives.</p>
+    </div>
+
+    {% if session.get('role') == 'ADMIN' %}
+    <button type="button" class="btn btn-primary-custom d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newProjectModal">
+      <i class="bi bi-plus-lg"></i>
+      <span>Add Project</span>
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="card-custom p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Project Name</th>
+            <th>Description</th>
+            <th>Project Manager</th>
+            <th>Status</th>
+            <th>Issues</th>
+            <th>Created Date</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in projects %}
+          <tr>
+            <td class="fw-semibold text-secondary small">{{ p.project_id }}</td>
+            <td>
+              <a href="{{ url_for('project_detail', project_id=p.project_id) }}" class="fw-bold text-dark text-decoration-none">
+                {{ p.project_name }}
+              </a>
+            </td>
+            <td class="small text-secondary" style="max-width: 280px;">
+              <span class="text-truncate d-block">{{ p.description or '—' }}</span>
+            </td>
+            <td class="small text-secondary">
+              <i class="bi bi-person-badge me-1 text-primary"></i>
+              {{ p.manager_name or 'Unassigned' }}
+            </td>
+            <td>
+              <span class="badge {% if p.lifecycle_status == 'ACTIVE' %}bg-success-subtle text-success{% else %}bg-secondary-subtle text-secondary{% endif %} px-2 py-1">
+                {{ p.lifecycle_status or 'ACTIVE' }}
+              </span>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border px-2 py-1">
+                {{ p.issue_count }} issues
+              </span>
+            </td>
+            <td class="small text-muted">{{ p.created_date or '—' }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('project_detail', project_id=p.project_id) }}" class="btn btn-sm btn-light border p-1" title="View Project Details">
+                <i class="bi bi-arrow-right-circle text-primary"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Project Modal (Admin Only) -->
+{% if session.get('role') == 'ADMIN' %}
+<div class="modal fade" id="newProjectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold">Create New Project</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('project_create') }}">
+        <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Project Name <span class="text-danger">*</span></label>
+            <input type="text" name="project_name" class="form-control" placeholder="e.g. Mobile Banking App" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Description</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Scope and purpose..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-secondary">Project Manager</label>
+            <select name="project_manager_id" class="form-select">
+              <option value="">Select Manager</option>
+              {% for mgr in managers %}
+              <option value="{{ mgr.user_id }}">{{ mgr.display_name }} ({{ mgr.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary-custom">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

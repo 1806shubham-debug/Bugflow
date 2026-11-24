@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}{{ issue.issue_id }}: {{ issue.title }}{% endblock %}
+
+{% block breadcrumbs %}
+Issues &rsaquo; <span class="text-dark fw-semibold">{{ issue.issue_id }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+  <!-- Top Navigation & Header Card -->
+  <div class="card-custom p-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="{{ url_for('issues_list') }}" class="btn btn-sm btn-outline-secondary" title="Back to issues list">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h4 fw-bold text-dark mb-0 d-inline-flex align-items-center gap-2">
+          <span>{{ issue.issue_id }}</span>
+          <span>{{ issue.title }}</span>
+        </h1>
+        {% set p_lower = issue.priority.lower() %}
+        <span class="badge badge-priority-{{ p_lower }} px-2 py-1 ms-2">{{ issue.priority }} Priority</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex align-items-center gap-2">
+        {% if can_edit(issue) %}
+        <a href="{{ url_for('issue_edit', issue_id=issue.issue_id) }}" class="btn btn-sm btn-primary-custom">
+          <i class="bi bi-pencil me-1"></i> Edit Issue
+        </a>
+        {% endif %}
+
+        {% if can_delete(issue) %}
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteIssueModal">
+          <i class="bi bi-trash"></i>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Issue Subtitle / Summary Line -->
+    <p class="text-secondary mb-3 small">{{ issue.description|truncate(160) }}</p>
+
+    <!-- Key Attributes Grid (Matching Milestone 2 Day 2 Screenshot) -->
+    <div class="row g-3 p-3 bg-light bg-opacity-75 rounded border text-secondary small">
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Issue Type</span>
+        {% set t_class = issue.issue_type.lower().replace(' ', '-') %}
+        <span class="badge badge-type-{{ t_class }} px-2 py-1">
+          <i class="bi bi-bug me-1"></i>{{ issue.issue_type }}
+        </span>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Severity</span>
+        {% set sev_lower = issue.severity.lower() %}
+        <span class="badge badge-severity-{{ sev_lower }} px-2 py-1">{{ issue.severity }}</span>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Priority</span>
+        <span class="badge badge-priority-{{ p_lower }} px-2 py-1">{{ issue.priority }}</span>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Status</span>
+        {% set s_class = issue.status.lower().replace(' ', '-') %}
+        <span class="badge badge-status-{{ s_class }} px-2 py-1 fw-bold">{{ issue.status }}</span>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Affected Module</span>
+        <strong class="text-dark"><i class="bi bi-window-sidebar me-1 text-muted"></i>{{ issue.component or 'General' }}</strong>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Environment</span>
+        <strong class="text-dark"><i class="bi bi-gear me-1 text-muted"></i>{{ issue.environment or 'Production' }}</strong>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Created By</span>
+        <div class="d-flex align-items-center gap-1">
+          <div class="rounded-circle bg-primary-subtle text-primary fw-bold text-center" style="width: 22px; height: 22px; line-height: 22px; font-size: 0.7rem;">
+            {{ issue.creator_name[0]|upper }}
+          </div>
+          <strong class="text-dark">{{ issue.creator_name }}</strong>
+        </div>
+        <small class="text-muted">{{ issue.created_date or '' }}</small>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <span class="text-muted d-block small mb-1">Assigned To</span>
+        {% if issue.assignee_name %}
+        <div class="d-flex align-items-center gap-1">
+          <div class="rounded-circle bg-secondary-subtle text-secondary fw-bold text-center" style="width: 22px; height: 22px; line-height: 22px; font-size: 0.7rem;">
+            {{ issue.assignee_name[0]|upper }}
+          </div>
+          <strong class="text-dark">{{ issue.assignee_name }}</strong>
+        </div>
+        {% else %}
+        <span class="text-muted fst-italic">Unassigned</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-Column Layout: Details & Comments (Left) vs Attachments, Activity & Workflow (Right) -->
+  <div class="row g-4">
+    <!-- Left Column: Details & Collaboration Comments -->
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+      <!-- Full Description & Steps Card -->
+      <div class="card-custom p-4">
+        <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-file-text me-2 text-primary"></i>Description</h2>
+        <div class="text-secondary mb-4" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">
+          {{ issue.description }}
+        </div>
+
+        {% if issue.steps_to_reproduce %}
+        <h6 class="small fw-bold text-secondary mb-2">Steps to Reproduce:</h6>
+        <div class="p-3 bg-light rounded border text-secondary small mb-3" style="white-space: pre-wrap;">{{ issue.steps_to_reproduce }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          {% if issue.expected_result %}
+          <div class="col-12 col-md-6">
+            <h6 class="small fw-bold text-secondary mb-1">Expected Result:</h6>
+            <div class="p-3 bg-light rounded border text-secondary small" style="white-space: pre-wrap;">{{ issue.expected_result }}</div>
+          </div>
+          {% endif %}
+          {% if issue.actual_result %}
+          <div class="col-12 col-md-6">
+            <h6 class="small fw-bold text-secondary mb-1">Actual Result:</h6>
+            <div class="p-3 bg-light rounded border text-secondary small" style="white-space: pre-wrap;">{{ issue.actual_result }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if issue.business_impact %}
+        <div class="mt-3">
+          <h6 class="small fw-bold text-secondary mb-1">Business Impact:</h6>
+          <div class="p-2 bg-light rounded border text-secondary small">{{ issue.business_impact }}</div>
+        </div>
+        {% endif %}
+
+        {% if issue.sprint_name %}
+        <div class="mt-3 pt-3 border-top d-flex align-items-center gap-2 small">
+          <span class="text-muted">Assigned Sprint:</span>
+          <span class="badge bg-primary-subtle text-primary border px-2 py-1">
+            <i class="bi bi-calendar-range me-1"></i>{{ issue.sprint_name }}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Resolution Summary (if available) -->
+      {% if issue.resolution_summary or issue.root_cause %}
+      <div class="card-custom p-4 border-success-subtle">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          <h2 class="h6 fw-bold text-dark mb-0">Resolution & Root Cause</h2>
+        </div>
+        {% if issue.resolution_summary %}
+        <p class="small text-dark mb-2">{{ issue.resolution_summary }}</p>
+        {% endif %}
+        {% if issue.root_cause %}
+        <div class="small text-muted">Root Cause: <span class="text-dark">{{ issue.root_cause }}</span></div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Module 2: Collaboration & Comments Section -->
+      <div class="card-custom p-4" id="comments">
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+          <h2 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-chat-left-text text-primary"></i>
+            <span>Comments</span>
+            <span class="badge rounded-pill bg-light text-secondary border">{{ comments|length }}</span>
+          </h2>
+          <a href="#commentInput" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Comment
+          </a>
+        </div>
+
+        <!-- Comments Feed -->
+        <div class="d-flex flex-column gap-3 mb-4">
+          {% for c in comments %}
+          <div class="p-3 bg-light bg-opacity-50 rounded border">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                  {{ c.author_name[0]|upper }}
+                </div>
+                <div>
+                  <strong class="text-dark small">{{ c.author_name }}</strong>
+                  <span class="badge bg-secondary-subtle text-secondary py-0 px-1 ms-1" style="font-size: 0.65rem;">{{ c.author_role or 'TEAM' }}</span>
+                </div>
+              </div>
+              <small class="text-muted" style="font-size: 0.75rem;">
+                {{ c.created_at.strftime('%b %d, %Y %I:%M %p') if c.created_at else '' }}
+              </small>
+            </div>
+            <p class="small text-secondary mb-0 ps-4" style="white-space: pre-wrap;">{{ c.comment_text }}</p>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-chat-dots fs-3 d-block text-secondary opacity-50 mb-1"></i>
+            <span class="small">No comments yet. Start the team discussion below.</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- New Comment Input Form -->
+        <form method="POST" action="{{ url_for('issue_add_comment', issue_id=issue.issue_id) }}" id="commentInput">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-2">
+            <textarea class="form-control form-control-sm" name="comment_text" rows="3" placeholder="Write a comment or status update..." required></textarea>
+          </div>
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-sm btn-primary-custom px-3">
+              <i class="bi bi-send me-1"></i> Post Comment
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- GitHub Commits Card (Milestone 3 Module 2) -->
+      <div class="card-custom p-4" id="commits">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <h2 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-github text-dark"></i>
+            <span>GitHub Commits</span>
+            <span class="badge rounded-pill bg-light text-secondary border">{{ commits|length if commits else 0 }}</span>
+          </h2>
+        </div>
+
+        <!-- Commits List -->
+        <div class="d-flex flex-column gap-3">
+          {% for c in commits %}
+          <div class="p-3 rounded border bg-light bg-opacity-50">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge font-monospace bg-dark text-white" style="font-size: 0.75rem;">
+                  {{ c.commit_sha[:7] }}
+                </span>
+                {% if c.repository_url %}
+                <a href="{{ c.repository_url }}" target="_blank" rel="noopener noreferrer" class="small text-decoration-none text-primary fw-semibold" title="View commit on GitHub">
+                  <i class="bi bi-box-arrow-up-right me-1"></i>{{ c.repository_name or 'View on GitHub' }}
+                </a>
+                {% elif c.repository_name %}
+                <span class="small text-muted"><i class="bi bi-folder2 me-1"></i>{{ c.repository_name }}</span>
+                {% endif %}
+              </div>
+              <small class="text-muted" style="font-size: 0.75rem;">
+                {{ c.committed_at.strftime('%b %d, %Y %I:%M %p') if c.committed_at else '' }}
+              </small>
+            </div>
+            <p class="small text-secondary mb-2" style="white-space: pre-wrap; word-break: break-word;">{{ c.commit_message }}</p>
+            <div class="text-muted small" style="font-size: 0.75rem;">
+              <i class="bi bi-person me-1"></i>Committed by <strong>{{ c.commit_author }}</strong>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-3">
+            <i class="bi bi-git fs-4 d-block text-secondary opacity-50 mb-1"></i>
+            <span class="small">No GitHub commits linked yet. Push commits with issue IDs (e.g. <code>BUG-00001</code>) in the commit message.</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Attachments, Activity History, and 5-Stage Status Workflow -->
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+      <!-- 1. Attachments Card (Module 2) -->
+      <div class="card-custom p-4" id="attachments">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <h2 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-paperclip text-primary"></i>
+            <span>Attachments</span>
+            <span class="badge rounded-pill bg-light text-secondary border">{{ attachments|length }}</span>
+          </h2>
+          <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#uploadCollapse">
+            <i class="bi bi-upload me-1"></i> Upload File
+          </button>
+        </div>
+
+        <!-- Upload Collapsible Form -->
+        <div class="collapse mb-3" id="uploadCollapse">
+          <form method="POST" action="{{ url_for('issue_upload_attachment', issue_id=issue.issue_id) }}" enctype="multipart/form-data" class="p-3 bg-light rounded border">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="form-label small fw-semibold text-secondary">Choose file (PNG, JPG, PDF, TXT — Max 5MB)</label>
+            <input type="file" name="file" class="form-control form-control-sm mb-2" accept=".png,.jpg,.jpeg,.pdf,.txt" required>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-sm btn-light border" data-bs-toggle="collapse" data-bs-target="#uploadCollapse">Cancel</button>
+              <button type="submit" class="btn btn-sm btn-primary-custom">Upload</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Attachments List -->
+        <div class="d-flex flex-column gap-2">
+          {% for a in attachments %}
+          <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-light bg-opacity-50">
+            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+              {% if a.original_filename.endswith(('.png', '.jpg', '.jpeg')) %}
+                <i class="bi bi-file-earmark-image fs-5 text-primary"></i>
+              {% elif a.original_filename.endswith('.pdf') %}
+                <i class="bi bi-file-earmark-pdf fs-5 text-danger"></i>
+              {% else %}
+                <i class="bi bi-file-earmark-text fs-5 text-secondary"></i>
+              {% endif %}
+              <div class="text-truncate">
+                <a href="{{ url_for('issue_download_attachment', issue_id=issue.issue_id, attachment_id=a.attachment_id) }}" class="text-dark fw-semibold small text-decoration-none text-truncate d-block" title="{{ a.original_filename }}">
+                  {{ a.original_filename }}
+                </a>
+                <span class="text-muted" style="font-size: 0.72rem;">
+                  {{ (a.file_size / 1024)|round(1) }} KB &bull; {{ a.created_at.strftime('%b %d, %Y') if a.created_at else '' }}
+                </span>
+              </div>
+            </div>
+            <a href="{{ url_for('issue_download_attachment', issue_id=issue.issue_id, attachment_id=a.attachment_id) }}" class="btn btn-sm btn-light border p-1" title="Download">
+              <i class="bi bi-download text-primary"></i>
+            </a>
+          </div>
+          {% else %}
+          <p class="text-muted small text-center my-3">No attachments uploaded yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 2. Status Workflow & Validated Transitions (Module 4) -->
+      <div class="card-custom p-4">
+        <h2 class="h6 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3 text-primary"></i>
+          <span>Status Workflow</span>
+        </h2>
+
+        <!-- Five-stage workflow stepper matching Milestone 2 PPT -->
+        {% set curr_idx = workflow_sequence.index(issue.status) if issue.status in workflow_sequence else 0 %}
+        <div class="workflow-stepper mb-4">
+          {% for step in workflow_sequence %}
+          {% set step_idx = loop.index0 %}
+          <div class="workflow-step {% if step_idx < curr_idx %}completed{% elif step_idx == curr_idx %}active{% else %}pending{% endif %}">
+            <div class="workflow-dot">
+              {% if step_idx < curr_idx %}
+                <i class="bi bi-check" style="font-size: 0.85rem;"></i>
+              {% elif step_idx == curr_idx %}
+                <span style="font-size: 0.65rem;">&bull;</span>
+              {% endif %}
+            </div>
+            <span class="workflow-label">{{ step }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Validated Status Transition Control -->
+        {% if can_update_status(issue) %}
+          {% if allowed_transitions %}
+          <form method="POST" action="{{ url_for('issue_update_status', issue_id=issue.issue_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary">Advance to Next Stage</label>
+              <select name="status" class="form-select form-select-sm" required>
+                {% for nxt in allowed_transitions %}
+                <option value="{{ nxt }}" selected>{{ nxt }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-info-circle-fill"></i>
+              <span><strong>Allowed Transition:</strong> {{ issue.status }} &rarr; {{ allowed_transitions[0] }}</span>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary-custom w-100">
+              <i class="bi bi-check2-circle me-1"></i> Update Status
+            </button>
+          </form>
+          {% else %}
+          <div class="alert alert-secondary py-2 px-3 small mb-0 text-center">
+            <i class="bi bi-check-all text-success me-1"></i>
+            This issue is in terminal stage (<strong>{{ issue.status }}</strong>). No further transitions permitted.
+          </div>
+          {% endif %}
+        {% else %}
+        <div class="text-muted small text-center">
+          Current status: <strong class="text-dark">{{ issue.status }}</strong>. You do not have permission to transition this issue.
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 3. Activity History Card (Module 2 & 4) -->
+      <div class="card-custom p-4">
+        <h2 class="h6 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-clock-history text-primary"></i>
+          <span>Activity History</span>
+        </h2>
+
+        <div class="timeline">
+          {% for h in activity_history %}
+          <div class="timeline-item">
+            <div class="timeline-dot">
+              {% if h.action_type == 'CREATED' %}
+                <i class="bi bi-plus-circle-fill"></i>
+              {% elif h.action_type == 'STATUS_CHANGED' %}
+                <i class="bi bi-arrow-repeat text-warning"></i>
+              {% elif h.action_type == 'ASSIGNED' %}
+                <i class="bi bi-person-fill text-info"></i>
+              {% elif h.action_type == 'COMMENT_ADDED' %}
+                <i class="bi bi-chat-fill text-primary"></i>
+              {% elif h.action_type == 'ATTACHMENT_ADDED' %}
+                <i class="bi bi-paperclip text-success"></i>
+              {% else %}
+                <i class="bi bi-dot"></i>
+              {% endif %}
+            </div>
+            <div>
+              <div class="small fw-semibold text-dark">{{ h.description }}</div>
+              <div class="text-muted" style="font-size: 0.72rem;">
+                by <strong>{{ h.actor_name }}</strong> &bull; {{ h.created_at.strftime('%b %d, %Y %I:%M %p') if h.created_at else '' }}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted small text-center my-2">No historical activity recorded.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Issue Modal -->
+{% if can_delete(issue) %}
+<div class="modal fade" id="deleteIssueModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle bg-danger-subtle p-2 text-danger">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+          </div>
+          <h5 class="modal-title fw-bold">Delete Issue {{ issue.issue_id }}</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-3">
+        <p class="text-secondary mb-2">Are you sure you want to permanently delete this issue?</p>
+        <div class="p-2 bg-light rounded border small">
+          <strong>{{ issue.title }}</strong>
+        </div>
+        <small class="text-muted d-block mt-2">All associated suggestions, comments, and attachments will also be removed. This cannot be undone.</small>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="POST" action="{{ url_for('issue_delete', issue_id=issue.issue_id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn btn-sm btn-danger">Confirm Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

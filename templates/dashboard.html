@@ -1,0 +1,713 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+  <!-- Top Welcome & Project Filter Bar -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h1 class="h3 fw-bold text-dark mb-1">Dashboard</h1>
+      <p class="text-secondary small mb-0">
+        Welcome back, <span class="fw-semibold text-dark">{{ session.get('display_name') }}</span>!
+        {% if role_scope_msg %}
+          <span class="badge bg-light text-secondary border ms-2" id="scopeBadge">{{ role_scope_msg }}</span>
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-3">
+      <!-- Project Filter Selector -->
+      <div class="d-flex align-items-center gap-2">
+        <label for="projectSelect" class="form-label mb-0 small fw-semibold text-secondary">Project:</label>
+        <select id="projectSelect" class="form-select form-select-sm shadow-sm" style="min-width: 240px;">
+          {% if session.get('role') in ['ADMIN', 'DEVELOPER', 'TESTER'] %}
+            <option value="" {% if not selected_project_id %}selected{% endif %}>All Projects (System-wide)</option>
+          {% elif session.get('role') == 'PROJECT_MANAGER' %}
+            <option value="" {% if not selected_project_id %}selected{% endif %}>All Managed Projects</option>
+          {% endif %}
+          {% for p in accessible_projects %}
+            <option value="{{ p.project_id }}" {% if selected_project_id == p.project_id %}selected{% endif %}>
+              {{ p.project_id }} — {{ p.project_name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <span class="badge bg-white text-secondary border px-3 py-2 fw-medium shadow-sm">
+        <i class="bi bi-calendar3 me-1 text-primary"></i> {{ today_date }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Defect Density Notice Banner -->
+  <div class="alert alert-light border shadow-sm d-flex flex-wrap align-items-center justify-content-between p-3 mb-0 gap-2" id="defectDensityAlert">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+      <div>
+        <span class="fw-bold text-dark">Defect Density:</span>
+        <span class="badge bg-secondary ms-1 me-2" id="defectDensityBadge">Unavailable</span>
+        <span class="text-secondary small" id="defectDensityReason">{{ defect_density.reason }}</span>
+      </div>
+    </div>
+    <span class="small text-muted d-none d-md-inline">Requires KLOC / Lines of Code denominator</span>
+  </div>
+
+  <!-- 9 Primary KPI Cards in Responsive Grid -->
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-3 g-3">
+    <!-- 1. Total Issues -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-blue">
+          <i class="bi bi-folder2-open"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Total Issues</div>
+          <div class="kpi-value text-primary" id="kpiTotal">{{ kpis.total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Pending Issues -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-amber">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Pending Issues</div>
+          <div class="kpi-value text-warning" id="kpiPending">{{ kpis.pending }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Resolution Percentage -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-teal">
+          <i class="bi bi-percent"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Resolution Rate</div>
+          <div class="kpi-value text-success" id="kpiResolutionRate">{{ kpis.resolution_percentage }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Open Issues -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-red">
+          <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Open Issues</div>
+          <div class="kpi-value text-danger" id="kpiOpen">{{ kpis.open }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. In Progress -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-amber">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div>
+          <div class="kpi-label">In Progress</div>
+          <div class="kpi-value text-warning" id="kpiInProgress">{{ kpis.in_progress }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Testing -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-indigo">
+          <i class="bi bi-clipboard-check"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Testing</div>
+          <div class="kpi-value text-purple" id="kpiTesting" style="color: #6d28d9;">{{ kpis.testing }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Resolved -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-green">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Resolved</div>
+          <div class="kpi-value text-success" id="kpiResolved">{{ kpis.resolved }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Closed -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-slate">
+          <i class="bi bi-archive"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Closed</div>
+          <div class="kpi-value text-secondary" id="kpiClosed">{{ kpis.closed }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Average Resolution Time -->
+    <div class="col">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon-box kpi-icon-purple">
+          <i class="bi bi-speedometer2"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Avg Resolution Time</div>
+          <div class="kpi-value text-dark" id="kpiAvgTime" style="font-size: 1.45rem;">
+            {{ kpis.avg_resolution_hours }}h <span class="text-muted fs-6">({{ kpis.avg_resolution_days }}d)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Status Donut Chart & Severity Bar Chart -->
+  <div class="row g-4">
+    <!-- Chart A: Issue Status Donut Chart -->
+    <div class="col-12 col-lg-5">
+      <div class="card-custom p-4 h-100 d-flex flex-column chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold text-dark mb-0">Issue Status Overview</h2>
+          <span class="badge bg-light text-secondary border">Real-time</span>
+        </div>
+
+        <div class="chart-container d-flex align-items-center justify-content-center my-auto" style="height: 220px;">
+          <canvas id="statusChart"></canvas>
+        </div>
+
+        <!-- Custom Readable Status Legend -->
+        <div class="row row-cols-2 row-cols-sm-3 g-2 mt-3 pt-3 border-top">
+          <div class="col d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #ef4444;"></span>
+            <span class="small text-secondary">Open: <strong class="text-dark" id="countOpen">{{ kpis.open }}</strong></span>
+          </div>
+          <div class="col d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #f59e0b;"></span>
+            <span class="small text-secondary">In Progress: <strong class="text-dark" id="countInProgress">{{ kpis.in_progress }}</strong></span>
+          </div>
+          <div class="col d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #8b5cf6;"></span>
+            <span class="small text-secondary">Testing: <strong class="text-dark" id="countTesting">{{ kpis.testing }}</strong></span>
+          </div>
+          <div class="col d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #10b981;"></span>
+            <span class="small text-secondary">Resolved: <strong class="text-dark" id="countResolved">{{ kpis.resolved }}</strong></span>
+          </div>
+          <div class="col d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width: 10px; height: 10px; background-color: #64748b;"></span>
+            <span class="small text-secondary">Closed: <strong class="text-dark" id="countClosed">{{ kpis.closed }}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart B: Defect Severity Bar Chart -->
+    <div class="col-12 col-lg-7">
+      <div class="card-custom p-4 h-100 d-flex flex-column chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold text-dark mb-0">Defect Severity Distribution</h2>
+          <span class="badge bg-light text-secondary border">Severity Breakdown</span>
+        </div>
+
+        <div class="chart-container my-auto" style="height: 220px;">
+          <canvas id="severityChart"></canvas>
+        </div>
+
+        <!-- Custom Readable Severity Legend -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3 pt-3 border-top">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-severity-critical">Critical</span>
+            <strong class="text-dark" id="countCritical">{{ kpis.critical }}</strong>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-severity-high">High</span>
+            <strong class="text-dark" id="countHigh">{{ kpis.high }}</strong>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-severity-medium">Medium</span>
+            <strong class="text-dark" id="countMedium">{{ kpis.medium }}</strong>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-severity-low">Low</span>
+            <strong class="text-dark" id="countLow">{{ kpis.low }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Monthly Defect Trends Line Chart -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card-custom p-4 chart-card">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <h2 class="h5 fw-bold text-dark mb-1">Monthly Defect Trends</h2>
+            <p class="text-secondary small mb-0">Reported issues vs. Resolved issues tracked chronologically</p>
+          </div>
+          <span class="badge bg-light text-secondary border">Timeline</span>
+        </div>
+
+        <div class="chart-container" style="height: 260px;">
+          <canvas id="trendsChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Module-Wise Breakdown & Recent Issues -->
+  <div class="row g-4">
+    <!-- Module-Wise Defect Breakdown -->
+    <div class="col-12 col-lg-7">
+      <div class="card-custom p-4 h-100 d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h2 class="h5 fw-bold text-dark mb-1">Module / Component Breakdown</h2>
+            <p class="text-secondary small mb-0">Defect volume and severity distribution across modules</p>
+          </div>
+          <span class="badge bg-light text-secondary border" id="moduleCountBadge">{{ modules_data|length }} Modules</span>
+        </div>
+
+        <div class="table-responsive my-auto" style="max-height: 380px; overflow-y: auto;">
+          <table class="table table-custom table-hover" id="moduleTable">
+            <thead class="sticky-top bg-light">
+              <tr>
+                <th>Module</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Open</th>
+                <th class="text-center">Pending</th>
+                <th class="text-center">Resolved</th>
+                <th>Severity Breakdown</th>
+              </tr>
+            </thead>
+            <tbody id="moduleTableBody">
+              {% for m in modules_data %}
+              <tr>
+                <td class="fw-semibold text-dark">{{ m.module_name }}</td>
+                <td class="text-center fw-bold">{{ m.total_defects }}</td>
+                <td class="text-center text-danger fw-semibold">{{ m.open_defects }}</td>
+                <td class="text-center text-warning fw-semibold">{{ m.pending_defects }}</td>
+                <td class="text-center text-success fw-semibold">{{ m.resolved_defects + m.closed_defects }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    {% if m.critical_count > 0 %}<span class="badge badge-severity-critical px-1 py-0" title="Critical">{{ m.critical_count }}C</span>{% endif %}
+                    {% if m.high_count > 0 %}<span class="badge badge-severity-high px-1 py-0" title="High">{{ m.high_count }}H</span>{% endif %}
+                    {% if m.medium_count > 0 %}<span class="badge badge-severity-medium px-1 py-0" title="Medium">{{ m.medium_count }}M</span>{% endif %}
+                    {% if m.low_count > 0 %}<span class="badge badge-severity-low px-1 py-0" title="Low">{{ m.low_count }}L</span>{% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">No module data recorded for this selection.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Issues Table -->
+    <div class="col-12 col-lg-5">
+      <div class="card-custom p-4 h-100 d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold text-dark mb-0">Recent Issues</h2>
+          <a href="{{ url_for('issues_list') }}" class="btn btn-sm btn-link text-primary text-decoration-none fw-semibold">
+            View All <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+
+        <div class="table-responsive my-auto" style="max-height: 380px; overflow-y: auto;">
+          <table class="table table-custom table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue in recent_issues %}
+              <tr>
+                <td class="fw-semibold text-secondary small">{{ issue.issue_id }}</td>
+                <td>
+                  <a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="text-dark fw-medium text-decoration-none text-truncate d-inline-block" style="max-width: 170px;" title="{{ issue.title }}">
+                    {{ issue.title }}
+                  </a>
+                </td>
+                <td>
+                  {% set s_class = issue.status.lower().replace(' ', '-') %}
+                  <span class="badge badge-status-{{ s_class }} px-2 py-1">{{ issue.status }}</span>
+                </td>
+                <td class="text-end">
+                  <a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="btn btn-sm btn-light border p-1" title="View details">
+                    <i class="bi bi-eye text-primary"></i>
+                  </a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No recent issues found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded Server-Side Seed Data for Initial Fast Paint -->
+<script id="serverSeedData" type="application/json">
+{
+  "kpis": {
+    "total": {{ kpis.total|tojson }},
+    "open": {{ kpis.open|tojson }},
+    "in_progress": {{ kpis.in_progress|tojson }},
+    "testing": {{ kpis.testing|tojson }},
+    "resolved": {{ kpis.resolved|tojson }},
+    "closed": {{ kpis.closed|tojson }},
+    "pending": {{ kpis.pending|tojson }},
+    "resolution_percentage": {{ kpis.resolution_percentage|tojson }},
+    "avg_resolution_hours": {{ kpis.avg_resolution_hours|tojson }},
+    "avg_resolution_days": {{ kpis.avg_resolution_days|tojson }},
+    "critical": {{ kpis.critical|tojson }},
+    "high": {{ kpis.high|tojson }},
+    "medium": {{ kpis.medium|tojson }},
+    "low": {{ kpis.low|tojson }}
+  },
+  "trends": {{ trends_data|tojson }}
+}
+</script>
+
+<!-- Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const seedElem = document.getElementById('serverSeedData');
+  const seed = seedElem ? JSON.parse(seedElem.textContent) : null;
+  const kpis = seed ? seed.kpis : {};
+  const trends = seed ? seed.trends : [];
+
+  // -------------------------------------------------------------------------
+  // 1. Chart A: Status Donut Chart
+  // -------------------------------------------------------------------------
+  const statusCtx = document.getElementById('statusChart').getContext('2d');
+  const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Open', 'In Progress', 'Testing', 'Resolved', 'Closed'],
+      datasets: [{
+        data: [
+          kpis.open || 0,
+          kpis.in_progress || 0,
+          kpis.testing || 0,
+          kpis.resolved || 0,
+          kpis.closed || 0
+        ],
+        backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#10b981', '#64748b'],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const val = ctx.raw || 0;
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+              return ` ${ctx.label}: ${val} (${pct}%)`;
+            }
+          }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. Chart B: Severity Bar Chart
+  // -------------------------------------------------------------------------
+  const severityCtx = document.getElementById('severityChart').getContext('2d');
+  const severityChart = new Chart(severityCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Critical', 'High', 'Medium', 'Low'],
+      datasets: [{
+        label: 'Issues Count',
+        data: [
+          kpis.critical || 0,
+          kpis.high || 0,
+          kpis.medium || 0,
+          kpis.low || 0
+        ],
+        backgroundColor: ['#dc2626', '#ea580c', '#ca8a04', '#16a34a'],
+        borderRadius: 4,
+        maxBarThickness: 50
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ` ${ctx.label} Severity: ${ctx.raw} issues`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        },
+        x: {
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. Chart C: Monthly Defect Trends Line Chart
+  // -------------------------------------------------------------------------
+  const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+  const trendsChart = new Chart(trendsCtx, {
+    type: 'line',
+    data: {
+      labels: trends.map(t => t.month),
+      datasets: [
+        {
+          label: 'Reported Defects',
+          data: trends.map(t => t.reported_count),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        },
+        {
+          label: 'Resolved Defects',
+          data: trends.map(t => t.resolved_count),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { boxWidth: 12, font: { size: 12 } }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        },
+        x: {
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Project Filter Dynamic Update & Browser Navigation (popstate)
+  // -------------------------------------------------------------------------
+  const projectSelect = document.getElementById('projectSelect');
+
+  async function fetchAndRender(projectId, pushHistory = true) {
+    const queryParam = projectId ? `?project_id=${encodeURIComponent(projectId)}` : '';
+
+    try {
+      // Fetch fresh analytics from backend Module 3 endpoints
+      const [ovRes, trRes, modRes] = await Promise.all([
+        fetch(`/api/analytics/overview${queryParam}`),
+        fetch(`/api/analytics/trends${queryParam}`),
+        fetch(`/api/analytics/modules${queryParam}`)
+      ]);
+
+      if (!ovRes.ok) {
+        if (ovRes.status === 403) {
+          alert('Access Denied: You are not authorized to view analytics for this project.');
+        } else if (ovRes.status === 404) {
+          alert('Project Not Found.');
+        }
+        return;
+      }
+
+      const ovData = await ovRes.json();
+      const trData = await trRes.json();
+      const modData = await modRes.json();
+
+      // 1. Update 9 KPI Cards
+      const s = ovData.summary;
+      const rt = ovData.resolution_time;
+      const sev = ovData.severity_breakdown || { critical: 0, high: 0, medium: 0, low: 0 };
+
+      document.getElementById('kpiTotal').textContent = s.total_issues;
+      document.getElementById('kpiPending').textContent = s.pending_issues;
+      document.getElementById('kpiResolutionRate').textContent = s.resolution_percentage + '%';
+      document.getElementById('kpiOpen').textContent = s.open_issues;
+      document.getElementById('kpiInProgress').textContent = s.in_progress_issues;
+      document.getElementById('kpiTesting').textContent = s.testing_issues;
+      document.getElementById('kpiResolved').textContent = s.resolved_issues;
+      document.getElementById('kpiClosed').textContent = s.closed_issues;
+      document.getElementById('kpiAvgTime').innerHTML = `${rt.average_resolution_hours}h <span class="text-muted fs-6">(${rt.average_resolution_days}d)</span>`;
+
+      // 2. Update Status Chart & Legend Counts
+      statusChart.data.datasets[0].data = [
+        s.open_issues,
+        s.in_progress_issues,
+        s.testing_issues,
+        s.resolved_issues,
+        s.closed_issues
+      ];
+      statusChart.update();
+
+      document.getElementById('countOpen').textContent = s.open_issues;
+      document.getElementById('countInProgress').textContent = s.in_progress_issues;
+      document.getElementById('countTesting').textContent = s.testing_issues;
+      document.getElementById('countResolved').textContent = s.resolved_issues;
+      document.getElementById('countClosed').textContent = s.closed_issues;
+
+      // 3. Update Severity Chart & Legend Counts
+      severityChart.data.datasets[0].data = [
+        sev.critical,
+        sev.high,
+        sev.medium,
+        sev.low
+      ];
+      severityChart.update();
+
+      document.getElementById('countCritical').textContent = sev.critical;
+      document.getElementById('countHigh').textContent = sev.high;
+      document.getElementById('countMedium').textContent = sev.medium;
+      document.getElementById('countLow').textContent = sev.low;
+
+      // 4. Update Trends Chart
+      trendsChart.data.labels = trData.trends.map(t => t.month);
+      trendsChart.data.datasets[0].data = trData.trends.map(t => t.reported_count);
+      trendsChart.data.datasets[1].data = trData.trends.map(t => t.resolved_count);
+      trendsChart.update();
+
+      // 5. Update Module Table
+      renderModuleTable(modData.modules);
+
+      // Update URL query string if pushHistory is enabled
+      if (pushHistory) {
+        const newUrl = projectId ? `/dashboard?project_id=${encodeURIComponent(projectId)}` : '/dashboard';
+        window.history.pushState({ projectId }, '', newUrl);
+      }
+
+    } catch (err) {
+      console.error('Failed to update dashboard analytics:', err);
+    }
+  }
+
+  if (projectSelect) {
+    projectSelect.addEventListener('change', function() {
+      fetchAndRender(this.value, true);
+    });
+  }
+
+  // Handle browser Back and Forward navigation
+  window.addEventListener('popstate', (e) => {
+    const params = new URLSearchParams(window.location.search);
+    const projId = params.get('project_id') || '';
+    if (projectSelect) {
+      projectSelect.value = projId;
+    }
+    fetchAndRender(projId, false);
+  });
+
+  function renderModuleTable(modules) {
+    const tbody = document.getElementById('moduleTableBody');
+    const badge = document.getElementById('moduleCountBadge');
+    if (!tbody) return;
+
+    if (badge) {
+      badge.textContent = `${modules ? modules.length : 0} Modules`;
+    }
+
+    if (!modules || modules.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No module data recorded for this selection.</td></tr>';
+      return;
+    }
+
+    let rowsHtml = '';
+    modules.forEach(m => {
+      const sev = m.severity_breakdown || {};
+      let pills = '';
+      if (sev.critical > 0) pills += `<span class="badge badge-severity-critical px-1 py-0" title="Critical">${sev.critical}C</span> `;
+      if (sev.high > 0) pills += `<span class="badge badge-severity-high px-1 py-0" title="High">${sev.high}H</span> `;
+      if (sev.medium > 0) pills += `<span class="badge badge-severity-medium px-1 py-0" title="Medium">${sev.medium}M</span> `;
+      if (sev.low > 0) pills += `<span class="badge badge-severity-low px-1 py-0" title="Low">${sev.low}L</span> `;
+
+      rowsHtml += `
+        <tr>
+          <td class="fw-semibold text-dark">${escapeHtml(m.module_name)}</td>
+          <td class="text-center fw-bold">${m.total_defects}</td>
+          <td class="text-center text-danger fw-semibold">${m.open_defects}</td>
+          <td class="text-center text-warning fw-semibold">${m.pending_defects}</td>
+          <td class="text-center text-success fw-semibold">${m.resolved_defects + m.closed_defects}</td>
+          <td><div class="d-flex gap-1">${pills}</div></td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = rowsHtml;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+});
+</script>
+{% endblock %}

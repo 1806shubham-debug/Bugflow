@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}System Reports{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / Reports
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h1 class="h3 fw-bold text-dark mb-1">Analytical Reports</h1>
+      <p class="text-secondary small mb-0">Distribution of issues across statuses, severities, priorities, and projects.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Issues by Status -->
+    <div class="col-12 col-md-6">
+      <div class="card-custom p-4 h-100">
+        <h2 class="h6 fw-bold text-dark mb-3">Issues by Status</h2>
+        <div class="d-flex flex-column gap-3">
+          {% for item in status_counts %}
+          <div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="fw-semibold text-secondary">{{ item.name }}</span>
+              <span class="fw-bold text-dark">{{ item.count }} ({{ item.percent }}%)</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar" style="width: {{ item.percent }}%; background-color: {{ item.color }};"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues by Severity -->
+    <div class="col-12 col-md-6">
+      <div class="card-custom p-4 h-100">
+        <h2 class="h6 fw-bold text-dark mb-3">Issues by Severity</h2>
+        <div class="d-flex flex-column gap-3">
+          {% for item in severity_counts %}
+          <div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="fw-semibold text-secondary">{{ item.name }}</span>
+              <span class="fw-bold text-dark">{{ item.count }} ({{ item.percent }}%)</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar" style="width: {{ item.percent }}%; background-color: {{ item.color }};"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues by Priority -->
+    <div class="col-12 col-md-6">
+      <div class="card-custom p-4 h-100">
+        <h2 class="h6 fw-bold text-dark mb-3">Issues by Priority</h2>
+        <div class="d-flex flex-column gap-3">
+          {% for item in priority_counts %}
+          <div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="fw-semibold text-secondary">{{ item.name }}</span>
+              <span class="fw-bold text-dark">{{ item.count }} ({{ item.percent }}%)</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar" style="width: {{ item.percent }}%; background-color: {{ item.color }};"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues by Issue Type -->
+    <div class="col-12 col-md-6">
+      <div class="card-custom p-4 h-100">
+        <h2 class="h6 fw-bold text-dark mb-3">Issues by Type</h2>
+        <div class="d-flex flex-column gap-3">
+          {% for item in type_counts %}
+          <div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="fw-semibold text-secondary">{{ item.name }}</span>
+              <span class="fw-bold text-dark">{{ item.count }} ({{ item.percent }}%)</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar" style="width: {{ item.percent }}%; background-color: #2563eb;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issues by Project Table -->
+  <div class="card-custom p-4">
+    <h2 class="h6 fw-bold text-dark mb-3">Issue Distribution by Project</h2>
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Open</th>
+            <th>In Progress</th>
+            <th>Testing</th>
+            <th>Resolved / Closed</th>
+            <th class="text-end">Total Issues</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in project_breakdown %}
+          <tr>
+            <td class="fw-bold text-dark">{{ p.project_name }}</td>
+            <td><span class="badge bg-danger-subtle text-danger">{{ p.open_count }}</span></td>
+            <td><span class="badge bg-warning-subtle text-warning">{{ p.in_progress_count }}</span></td>
+            <td><span class="badge bg-info-subtle text-info">{{ p.testing_count }}</span></td>
+            <td><span class="badge bg-success-subtle text-success">{{ p.resolved_count }}</span></td>
+            <td class="text-end fw-bold text-dark">{{ p.total_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ issue.issue_id }}{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / <a href="{{ url_for('issues_list') }}" class="text-secondary text-decoration-none">Issues</a> / <a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="text-secondary text-decoration-none">{{ issue.issue_id }}</a> / Edit
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+    <div class="card-custom p-4">
+      <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="btn btn-sm btn-light border" title="Back to issue">
+            <i class="bi bi-arrow-left"></i>
+          </a>
+          <div>
+            <h1 class="h4 fw-bold text-dark mb-0">Edit Issue {{ issue.issue_id }}</h1>
+            <small class="text-secondary">Update issue attributes, resolution details, or assignment.</small>
+          </div>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('issue_edit', issue_id=issue.issue_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="row g-3">
+          <!-- Project & Title -->
+          <div class="col-12 col-md-6">
+            <label for="project_id" class="form-label small fw-semibold text-secondary">Project <span class="text-danger">*</span></label>
+            <select class="form-select" id="project_id" name="project_id" required>
+              {% for p in projects %}
+              <option value="{{ p.project_id }}" {% if issue.project_id == p.project_id %}selected{% endif %}>
+                {{ p.project_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="title" class="form-label small fw-semibold text-secondary">Issue Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ issue.title }}" required>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label for="description" class="form-label small fw-semibold text-secondary">Description <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="description" name="description" rows="3" required>{{ issue.description or '' }}</textarea>
+          </div>
+
+          <!-- Type, Severity, Priority, Status -->
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="issue_type" class="form-label small fw-semibold text-secondary">Issue Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="issue_type" name="issue_type" required>
+              {% for t in all_issue_types %}
+                {% if t in issue_types or issue.issue_type == t %}
+                <option value="{{ t }}" {% if issue.issue_type == t %}selected{% endif %}>{{ t }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="severity" class="form-label small fw-semibold text-secondary">Severity <span class="text-danger">*</span></label>
+            <select class="form-select" id="severity" name="severity" required>
+              {% for sev in severities %}
+              <option value="{{ sev }}" {% if issue.severity == sev %}selected{% endif %}>{{ sev }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="priority" class="form-label small fw-semibold text-secondary">Priority <span class="text-danger">*</span></label>
+            <select class="form-select" id="priority" name="priority" required>
+              {% for pr in all_priorities %}
+                {% if pr in priorities or issue.priority == pr %}
+                <option value="{{ pr }}" {% if issue.priority == pr %}selected{% endif %}>
+                  {{ priority_meanings.get(pr, pr) }}
+                </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="status" class="form-label small fw-semibold text-secondary">Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="status" name="status" required>
+              <option value="{{ issue.status }}" selected>{{ issue.status }} (Current)</option>
+              {% for nxt in workflow_transitions.get(issue.status, []) %}
+              <option value="{{ nxt }}">→ Move to: {{ nxt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Assignee & Sprint -->
+          <div class="col-12 col-md-6">
+            <label for="assigned_to" class="form-label small fw-semibold text-secondary">Assign To</label>
+            <select class="form-select" id="assigned_to" name="assigned_to">
+              <option value="">Unassigned</option>
+              {% for u in users %}
+              <option value="{{ u.user_id }}" {% if issue.assigned_to == u.user_id %}selected{% endif %}>
+                {{ u.display_name }} ({{ u.role }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="sprint_id" class="form-label small fw-semibold text-secondary">Sprint</label>
+            <select class="form-select" id="sprint_id" name="sprint_id">
+              <option value="">No Sprint</option>
+              {% for sp in sprints %}
+              <option value="{{ sp.sprint_id }}" {% if issue.sprint_id == sp.sprint_id %}selected{% endif %}>
+                {{ sp.project_name }}: {{ sp.sprint_name }} ({{ sp.status }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Affected Module & Environment -->
+          <div class="col-12 col-md-6">
+            <label for="component" class="form-label small fw-semibold text-secondary">Affected Module</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="bi bi-window-sidebar"></i></span>
+              <input type="text" class="form-control" id="component" name="component" list="commonModulesList" placeholder="e.g. Login, Dashboard, Payment..." value="{{ issue.component or '' }}">
+            </div>
+            <datalist id="commonModulesList">
+              <option value="Login">
+              <option value="Dashboard">
+              <option value="Payment">
+              <option value="Reports">
+              <option value="Authentication">
+              <option value="Search">
+              <option value="UI">
+              <option value="Backend">
+              <option value="Notifications">
+            </datalist>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="environment" class="form-label small fw-semibold text-secondary">Environment</label>
+            <input type="text" class="form-control" id="environment" name="environment" value="{{ issue.environment or '' }}">
+          </div>
+
+          <!-- Reproduction Steps -->
+          <div class="col-12">
+            <label for="steps_to_reproduce" class="form-label small fw-semibold text-secondary">Steps to Reproduce</label>
+            <textarea class="form-control" id="steps_to_reproduce" name="steps_to_reproduce" rows="3">{{ issue.steps_to_reproduce or '' }}</textarea>
+          </div>
+
+          <!-- Expected vs Actual Result -->
+          <div class="col-12 col-md-6">
+            <label for="expected_result" class="form-label small fw-semibold text-secondary">Expected Result</label>
+            <textarea class="form-control" id="expected_result" name="expected_result" rows="2">{{ issue.expected_result or '' }}</textarea>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="actual_result" class="form-label small fw-semibold text-secondary">Actual Result</label>
+            <textarea class="form-control" id="actual_result" name="actual_result" rows="2">{{ issue.actual_result or '' }}</textarea>
+          </div>
+
+          <!-- Resolution Summary & Root Cause -->
+          <div class="col-12 col-md-6">
+            <label for="resolution_summary" class="form-label small fw-semibold text-secondary">Resolution Summary</label>
+            <textarea class="form-control" id="resolution_summary" name="resolution_summary" rows="2" placeholder="Summary of resolution if solved...">{{ issue.resolution_summary or '' }}</textarea>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="root_cause" class="form-label small fw-semibold text-secondary">Root Cause</label>
+            <textarea class="form-control" id="root_cause" name="root_cause" rows="2" placeholder="Identified root cause...">{{ issue.root_cause or '' }}</textarea>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="col-12 pt-3 border-top d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary-custom px-4">Update Issue</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

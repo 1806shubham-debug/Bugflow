@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Issue{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / <a href="{{ url_for('issues_list') }}" class="text-secondary text-decoration-none">Issues</a> / Create
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+    <div class="card-custom p-4">
+      <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <a href="{{ url_for('issues_list') }}" class="btn btn-sm btn-light border" title="Back to issues">
+            <i class="bi bi-arrow-left"></i>
+          </a>
+          <div>
+            <h1 class="h4 fw-bold text-dark mb-0">Create New Issue</h1>
+            <small class="text-secondary">Capture details, environment, and steps for reproducible tracking.</small>
+          </div>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('issue_create') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="row g-3">
+          <!-- Project & Title -->
+          <div class="col-12 col-md-6">
+            <label for="project_id" class="form-label small fw-semibold text-secondary">Project <span class="text-danger">*</span></label>
+            <select class="form-select" id="project_id" name="project_id" required>
+              <option value="">Select Project</option>
+              {% for p in projects %}
+              <option value="{{ p.project_id }}" {% if form_data.project_id == p.project_id %}selected{% endif %}>
+                {{ p.project_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="title" class="form-label small fw-semibold text-secondary">Issue Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title" placeholder="Brief summary of the defect or feature" value="{{ form_data.title or '' }}" required>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label for="description" class="form-label small fw-semibold text-secondary">Description <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Provide complete context..." required>{{ form_data.description or '' }}</textarea>
+          </div>
+
+          <!-- Type, Severity, Priority, Status -->
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="issue_type" class="form-label small fw-semibold text-secondary">Issue Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="issue_type" name="issue_type" required>
+              {% for t in issue_types %}
+              <option value="{{ t }}" {% if form_data.issue_type == t or (not form_data.issue_type and t == 'Bug') %}selected{% endif %}>
+                {{ t }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="severity" class="form-label small fw-semibold text-secondary">Severity <span class="text-danger">*</span></label>
+            <select class="form-select" id="severity" name="severity" required>
+              {% for sev in severities %}
+              <option value="{{ sev }}" {% if form_data.severity == sev or (not form_data.severity and sev == 'Medium') %}selected{% endif %}>
+                {{ sev }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label for="priority" class="form-label small fw-semibold text-secondary">Priority <span class="text-danger">*</span></label>
+            <select class="form-select" id="priority" name="priority" required>
+              {% for pr in priorities %}
+              <option value="{{ pr }}" {% if form_data.priority == pr or (not form_data.priority and pr == 'P2') %}selected{% endif %}>
+                {{ priority_meanings.get(pr, pr) }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label small fw-semibold text-secondary">Status</label>
+            <input type="text" class="form-control bg-light" value="Open (Initial Stage)" disabled>
+            <input type="hidden" name="status" value="Open">
+          </div>
+
+          <!-- Affected Module & Environment -->
+          <div class="col-12 col-md-6">
+            <label for="component" class="form-label small fw-semibold text-secondary">Affected Module</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="bi bi-window-sidebar"></i></span>
+              <input type="text" class="form-control" id="component" name="component" list="commonModulesList" placeholder="e.g. Login, Dashboard, Payment, Search..." value="{{ form_data.component or '' }}">
+            </div>
+            <datalist id="commonModulesList">
+              <option value="Login">
+              <option value="Dashboard">
+              <option value="Payment">
+              <option value="Reports">
+              <option value="Authentication">
+              <option value="Search">
+              <option value="UI">
+              <option value="Backend">
+              <option value="Notifications">
+            </datalist>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="environment" class="form-label small fw-semibold text-secondary">Environment</label>
+            <input type="text" class="form-control" id="environment" name="environment" placeholder="e.g. Production, Staging, iOS 17" value="{{ form_data.environment or '' }}">
+          </div>
+
+          <!-- Assignee & Sprint -->
+          <div class="col-12 col-md-6">
+            <label for="assigned_to" class="form-label small fw-semibold text-secondary">Assign To</label>
+            <select class="form-select" id="assigned_to" name="assigned_to">
+              <option value="">Unassigned</option>
+              {% for u in users %}
+              <option value="{{ u.user_id }}" {% if form_data.assigned_to == u.user_id %}selected{% endif %}>
+                {{ u.display_name }} ({{ u.role }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="sprint_id" class="form-label small fw-semibold text-secondary">Sprint</label>
+            <select class="form-select" id="sprint_id" name="sprint_id">
+              <option value="">No Sprint</option>
+              {% for sp in sprints %}
+              <option value="{{ sp.sprint_id }}" {% if form_data.sprint_id == sp.sprint_id %}selected{% endif %}>
+                {{ sp.project_name }}: {{ sp.sprint_name }} ({{ sp.status }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Reproduction Steps -->
+          <div class="col-12">
+            <label for="steps_to_reproduce" class="form-label small fw-semibold text-secondary">Steps to Reproduce</label>
+            <textarea class="form-control" id="steps_to_reproduce" name="steps_to_reproduce" rows="3" placeholder="1. Navigate to... 2. Click on... 3. Observe...">{{ form_data.steps_to_reproduce or '' }}</textarea>
+          </div>
+
+          <!-- Expected vs Actual Result -->
+          <div class="col-12 col-md-6">
+            <label for="expected_result" class="form-label small fw-semibold text-secondary">Expected Result</label>
+            <textarea class="form-control" id="expected_result" name="expected_result" rows="2" placeholder="What should happen...">{{ form_data.expected_result or '' }}</textarea>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="actual_result" class="form-label small fw-semibold text-secondary">Actual Result</label>
+            <textarea class="form-control" id="actual_result" name="actual_result" rows="2" placeholder="What actually happened...">{{ form_data.actual_result or '' }}</textarea>
+          </div>
+
+          <div class="col-12">
+            <label for="business_impact" class="form-label small fw-semibold text-secondary">Business Impact</label>
+            <input type="text" class="form-control" id="business_impact" name="business_impact" placeholder="e.g. Users cannot complete checkout" value="{{ form_data.business_impact or '' }}">
+          </div>
+
+          <!-- Optional Attachment Upload -->
+          <div class="col-12">
+            <label for="attachment" class="form-label small fw-semibold text-secondary">Attachments (Optional)</label>
+            <input type="file" class="form-control" id="attachment" name="attachment" accept=".png,.jpg,.jpeg,.pdf,.txt">
+            <small class="text-muted d-block mt-1">Allowed formats: PNG, JPG, JPEG, PDF, TXT (Maximum file size: 5 MB).</small>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="col-12 pt-3 border-top d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('issues_list') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary-custom px-4">Create Issue</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

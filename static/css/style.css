@@ -1,0 +1,535 @@
+/* ==========================================================================
+   BugFlow — Modern Issue Tracking & Resolution Platform
+   Visual Design System matching Reference Specifications
+   ========================================================================== */
+
+:root {
+  --bg-main: #f4f6fa;
+  --bg-sidebar: #0f172a;
+  --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --bg-sidebar-active: #2563eb;
+  --text-sidebar: #94a3b8;
+  --text-sidebar-active: #ffffff;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #0ea5e9;
+  --border-color: #e2e8f0;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: #1e293b;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Layout Structure: Sidebar + Header + Content
+   -------------------------------------------------------------------------- */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--bg-sidebar);
+  color: var(--text-sidebar);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease-in-out;
+  z-index: 1040;
+}
+
+.sidebar-brand {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-brand svg {
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  padding: 1rem 0.75rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.95rem;
+  color: var(--text-sidebar);
+  text-decoration: none;
+  font-size: 0.925rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.sidebar-link:hover {
+  color: #ffffff;
+  background-color: var(--bg-sidebar-hover);
+}
+
+.sidebar-link.active {
+  background-color: var(--bg-sidebar-active);
+  color: var(--text-sidebar-active);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+
+.sidebar-footer {
+  padding: 1rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.main-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Top Header Bar
+   -------------------------------------------------------------------------- */
+.top-header {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.user-avatar-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   Main Content Area & Cards
+   -------------------------------------------------------------------------- */
+.content-body {
+  padding: 1.75rem;
+  flex-grow: 1;
+}
+
+.card-custom {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 0.65rem;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease;
+}
+
+.card-custom:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* --------------------------------------------------------------------------
+   KPI Stat Cards
+   -------------------------------------------------------------------------- */
+.kpi-card {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+
+.kpi-icon-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+}
+
+.kpi-icon-blue { background: #eff6ff; color: #2563eb; }
+.kpi-icon-red { background: #fef2f2; color: #ef4444; }
+.kpi-icon-amber { background: #fffbeb; color: #f59e0b; }
+.kpi-icon-green { background: #f0fdf4; color: #10b981; }
+.kpi-icon-purple { background: #f5f3ff; color: #7c3aed; }
+.kpi-icon-indigo { background: #eef2ff; color: #4f46e5; }
+.kpi-icon-teal { background: #f0fdfa; color: #0d9488; }
+.kpi-icon-slate { background: #f8fafc; color: #475569; }
+
+.chart-card {
+  min-height: 340px;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 260px;
+}
+
+.kpi-subtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+}
+
+.kpi-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* --------------------------------------------------------------------------
+   Compact Tables & Badges
+   -------------------------------------------------------------------------- */
+.table-custom {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.table-custom th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.table-custom td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.table-custom tr:hover td {
+  background-color: #f8fafc;
+}
+
+/* Badges for Status, Priority, Severity */
+.badge-status-open { background: #fee2e2; color: #b91c1c; }
+.badge-status-open { background: #e0f2fe; color: #0284c7; }
+.badge-status-in-progress { background: #fef3c7; color: #d97706; }
+.badge-status-testing { background: #ede9fe; color: #6d28d9; }
+.badge-status-resolved { background: #dcfce7; color: #15803d; }
+.badge-status-closed { background: #f1f5f9; color: #475569; }
+
+.badge-priority-p0 { background: #fee2e2; color: #991b1b; font-weight: 700; }
+.badge-priority-p1 { background: #fee2e2; color: #dc2626; font-weight: 700; }
+.badge-priority-p2 { background: #fef9c3; color: #854d0e; font-weight: 600; }
+.badge-priority-p3 { background: #dbeafe; color: #1e40af; font-weight: 600; }
+.badge-priority-p4 { background: #dcfce7; color: #15803d; font-weight: 600; }
+
+.badge-severity-critical { background: #fee2e2; color: #991b1b; font-weight: 700; }
+.badge-severity-high { background: #ffedd5; color: #c2410c; font-weight: 600; }
+.badge-severity-medium { background: #fef9c3; color: #854d0e; font-weight: 600; }
+.badge-severity-low { background: #dcfce7; color: #15803d; font-weight: 600; }
+
+.badge-type-bug { background: #fee2e2; color: #dc2626; font-weight: 600; }
+.badge-type-feature-request { background: #dcfce7; color: #15803d; font-weight: 600; }
+.badge-type-enhancement { background: #ede9fe; color: #6d28d9; font-weight: 600; }
+.badge-type-technical-debt { background: #cffafe; color: #0e7490; font-weight: 600; }
+.badge-type-support-ticket { background: #f1f5f9; color: #475569; font-weight: 600; }
+
+.badge-role {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* --------------------------------------------------------------------------
+   Auth Screen Split Layout
+   -------------------------------------------------------------------------- */
+.auth-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.auth-brand-side {
+  flex: 1;
+  background: #0f172a;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand-side::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+  border-radius: 50%;
+}
+
+.auth-card-side {
+  flex: 1.1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* --------------------------------------------------------------------------
+   Action Buttons & Responsive Utilities
+   -------------------------------------------------------------------------- */
+.btn-primary-custom {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 500;
+  padding: 0.55rem 1.15rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.btn-primary-custom:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff;
+}
+
+.action-btn {
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+@media (max-width: 991.98px) {
+  .sidebar {
+    position: fixed;
+    height: 100vh;
+    left: -260px;
+  }
+  .sidebar.show {
+    left: 0;
+  }
+  .auth-wrapper {
+    flex-direction: column;
+  }
+  .auth-brand-side {
+    min-height: 240px;
+    padding: 2rem 1rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Milestone 2: Workflow Stepper, Sprint Board & Activity Timeline
+   -------------------------------------------------------------------------- */
+.workflow-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 1rem 0.5rem;
+}
+
+.workflow-stepper::before {
+  content: '';
+  position: absolute;
+  top: 32px;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: #e2e8f0;
+  z-index: 1;
+}
+
+.workflow-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.workflow-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.workflow-step.completed .workflow-dot {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.workflow-step.active .workflow-dot {
+  background: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 4px #dbeafe;
+}
+
+.workflow-step.pending .workflow-dot {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.workflow-label {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.workflow-step.active .workflow-label {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.workflow-step.completed .workflow-label {
+  color: #334155;
+}
+
+/* Sprint Board Columns */
+.board-column {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.board-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.board-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
+}
+
+/* Activity Timeline */
+.timeline {
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -1.75rem;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #2563eb;
+}

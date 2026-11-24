@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Product Backlog{% endblock %}
+
+{% block breadcrumbs %}
+BugFlow / Backlog
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+  <!-- Top Bar: Title & Filters -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h1 class="h3 fw-bold text-dark mb-1">Product Backlog</h1>
+      <p class="text-secondary small mb-0">Unassigned issues awaiting sprint allocation across projects.</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <form method="GET" action="{{ url_for('backlog_list') }}" class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search backlog..." value="{{ q or '' }}">
+        </div>
+
+        <select name="project_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All Projects</option>
+          {% for p in projects %}
+          <option value="{{ p.project_id }}" {% if selected_project == p.project_id %}selected{% endif %}>
+            {{ p.project_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% if selected_project or q %}
+        <a href="{{ url_for('backlog_list') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Backlog Table Card -->
+  <div class="card-custom p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Project</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>Severity</th>
+            <th>Module</th>
+            <th>Status</th>
+            <th>Assignee</th>
+            <th class="text-end">Assign to Sprint</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in backlog_issues %}
+          <tr>
+            <td class="fw-semibold text-secondary small">
+              <a href="{{ url_for('issue_detail', issue_id=b.issue_id) }}" class="fw-bold text-dark text-decoration-none">
+                {{ b.issue_id }}
+              </a>
+            </td>
+            <td>
+              <a href="{{ url_for('issue_detail', issue_id=b.issue_id) }}" class="text-dark fw-medium text-decoration-none text-truncate d-inline-block" style="max-width: 250px;" title="{{ b.title }}">
+                {{ b.title }}
+              </a>
+            </td>
+            <td class="small text-secondary">{{ b.project_name }}</td>
+            <td>
+              {% set t_class = b.issue_type.lower().replace(' ', '-') %}
+              <span class="badge badge-type-{{ t_class }} px-2 py-1">{{ b.issue_type }}</span>
+            </td>
+            <td>
+              {% set p_lower = b.priority.lower() %}
+              <span class="badge badge-priority-{{ p_lower }} px-2 py-1">{{ b.priority }}</span>
+            </td>
+            <td>
+              {% set sev_lower = b.severity.lower() %}
+              <span class="badge badge-severity-{{ sev_lower }} px-2 py-1">{{ b.severity }}</span>
+            </td>
+            <td class="small text-secondary">
+              {% if b.component %}
+                <span class="badge bg-light text-dark border px-2 py-1">{{ b.component }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set s_class = b.status.lower().replace(' ', '-') %}
+              <span class="badge badge-status-{{ s_class }} px-2 py-1">{{ b.status }}</span>
+            </td>
+            <td class="small text-secondary">
+              {% if b.assignee_name %}
+                <span class="d-inline-flex align-items-center gap-1">
+                  <i class="bi bi-person text-muted"></i> {{ b.assignee_name }}
+                </span>
+              {% else %}
+                <span class="text-muted fst-italic">Unassigned</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if session.get('role') in ['ADMIN', 'PROJECT_MANAGER'] %}
+                <!-- Find matching sprints for this issue's project -->
+                {% set proj_sprints = sprints | selectattr('project_id', 'equalto', b.project_id) | list %}
+                {% if proj_sprints %}
+                <form method="POST" action="" onsubmit="this.action='/sprints/' + this.sprint_id.value + '/assign'" class="d-inline-flex align-items-center gap-1 justify-content-end">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="issue_id" value="{{ b.issue_id }}">
+                  <select name="sprint_id" class="form-select form-select-sm" style="width: auto; max-width: 160px;" required>
+                    {% for sp in proj_sprints %}
+                    <option value="{{ sp.sprint_id }}">{{ sp.sprint_name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-primary-custom text-nowrap py-1 px-2" style="font-size: 0.78rem;">
+                    Assign
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-muted small fst-italic">No active sprints</span>
+                {% endif %}
+              {% else %}
+              <span class="text-muted small">Backlog</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-2 d-block text-secondary opacity-50 mb-2"></i>
+              No unassigned issues found in the backlog.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,72 @@
+name: BugFlow CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Automated Test Suites
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://bugflow_user:bugflow_password@localhost:5432/bugflow_test
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: bugflow_test
+          POSTGRES_USER: bugflow_user
+          POSTGRES_PASSWORD: bugflow_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bugflow_user -d bugflow_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Initialize Database Schema and Migrations
+        run: |
+          python -c "
+          import os, psycopg
+          with psycopg.connect(os.environ['DATABASE_URL']) as conn:
+              with conn.cursor() as cur:
+                  for path in ['schema.sql', 'migrations/milestone2.sql', 'migrations/milestone3.sql']:
+                      with open(path, 'r', encoding='utf-8') as f:
+                          cur.execute(f.read())
+              conn.commit()
+          print('Base schema and milestone migrations applied successfully.')
+          "
+          python migrate.py
+
+      - name: Seed Database from Clean CSV
+        run: |
+          python import_data.py
+
+      - name: Configure Test Administrator Account
+        run: |
+          python setup_admin.py --user-id USR-001 --password "AdminPass123!"
+
+      - name: Run BugFlow Test Suites
+        env:
+          GITHUB_WEBHOOK_SECRET: ci-test-webhook-secret-key-12345
+        run: |
+          python tests/run_all.py
